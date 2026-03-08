@@ -18,8 +18,14 @@ jobs:
 
       - name: Fetch latest release and compare
         id: bump
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          RELEASE_JSON=$(curl -s https://api.github.com/repos/farion1231/cc-switch/releases/latest)
+          RELEASE_JSON=$(curl -fsSL \
+            -H "Authorization: Bearer ${GITHUB_TOKEN:?}" \
+            -H "Accept: application/vnd.github+json" \
+            https://api.github.com/repos/farion1231/cc-switch/releases/latest)
+          echo "$RELEASE_JSON"
 
           LATEST=$(echo "$RELEASE_JSON" | jq -r '.tag_name | sub("^v"; "")')
           CURRENT=$(grep 'version ".*"' Casks/cc-switch.rb | sed 's/.*"\(.*\)".*/\1/')
