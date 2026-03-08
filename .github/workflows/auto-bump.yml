@@ -19,7 +19,10 @@ jobs:
       - name: Fetch latest release and compare
         id: bump
         run: |
-          RELEASE_JSON=$(curl -s https://api.github.com/repos/farion1231/cc-switch/releases/latest)
+          RELEASE_JSON=$(GITHUB_TOKEN="$GITHUB_TOKEN" curl -s https://api.github.com/repos/farion1231/cc-switch/releases/latest)
+          echo "$RELEASE_JSON"
+
+          set -x
 
           LATEST=$(echo "$RELEASE_JSON" | jq -r '.tag_name | sub("^v"; "")')
           CURRENT=$(grep 'version ".*"' Casks/cc-switch.rb | sed 's/.*"\(.*\)".*/\1/')
