@@ -66,8 +66,8 @@ jobs:
       - name: Test cask
         if: steps.bump.outputs.need_bump == 'true'
         run: |
-          brew install --cask --quiet Casks/cc-switch.rb
-          brew uninstall --cask --quiet cc-switch
+          brew tap farion1231/homebrew-ccswitch "$PWD"
+          brew install --cask --quiet farion1231/ccswitch/cc-switch
 
       - name: Create pull request
         if: steps.bump.outputs.need_bump == 'true'
