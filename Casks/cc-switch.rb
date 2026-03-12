@@ -14,6 +14,34 @@ cask "cc-switch" do
 
   depends_on macos: :monterey
 
+  # Verify the release asset was uploaded by GitHub Actions
+  preflight do
+    # Fetch latest release info from GitHub API
+    release_info = JSON.parse(
+      system_command("curl",
+                     args:         ["--silent", "--location",
+                                    "https://api.github.com/repos/farion1231/cc-switch/releases/latest"],
+                     print_stderr: false).stdout,
+    )
+
+    # GitHub Actions bot ID and login
+    github_actions_bot_id = 41898282
+    github_actions_bot_login = "github-actions[bot]"
+
+    # Check both the login and ID
+    uploader = release_info.dig("author", "login")
+    uploader_id = release_info.dig("author", "id")
+
+    if uploader != github_actions_bot_login || uploader_id != github_actions_bot_id
+      raise <<~EOS.chomp
+        The release was not uploaded by the GitHub Actions bot.
+        Current uploader: #{uploader} (ID: #{uploader_id})
+        Expected: #{github_actions_bot_login} (ID: #{github_actions_bot_id})
+        Please ensure the release was created via GitHub Actions workflow.
+      EOS
+    end
+  end
+
   app "CC Switch.app"
 
   zap trash: [
