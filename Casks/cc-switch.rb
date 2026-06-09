@@ -16,11 +16,11 @@ cask "cc-switch" do
 
   # Verify the release asset was uploaded by GitHub Actions
   preflight do
-    # Fetch latest release info from GitHub API
+    # Fetch the cask's pinned release info from GitHub API
     release_info = JSON.parse(
       system_command("curl",
                      args:         ["--silent", "--location",
-                                    "https://api.github.com/repos/farion1231/cc-switch/releases/latest"],
+                                    "https://api.github.com/repos/farion1231/cc-switch/releases/tags/v#{version}"],
                      print_stderr: false).stdout,
     )
 
