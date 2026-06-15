@@ -57,6 +57,8 @@ jobs:
 
       - name: Update, commit & test
         if: steps.bump.outputs.need_bump == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           VERSION="${{ steps.bump.outputs.latest }}"
           SHA256="${{ steps.bump.outputs.sha256 }}"
@@ -68,9 +70,9 @@ jobs:
           git add Casks/cc-switch.rb
           git commit -m "chore: bump cc-switch to v${{ steps.bump.outputs.latest }}"
 
-          brew tap farion1231/homebrew-ccswitch "$PWD"
-          brew tap-info farion1231/homebrew-ccswitch
-          brew install --cask farion1231/ccswitch/cc-switch
+          brew tap bryango/homebrew-ccswitch "$PWD"
+          brew tap-info bryango/homebrew-ccswitch
+          brew install --cask bryango/ccswitch/cc-switch
 
       - name: Create pull request
         if: steps.bump.outputs.need_bump == 'true'
