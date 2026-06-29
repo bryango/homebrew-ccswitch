@@ -58,7 +58,7 @@ jobs:
       - name: Update, commit & test
         if: steps.bump.outputs.need_bump == 'true'
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HOMEBREW_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           VERSION="${{ steps.bump.outputs.latest }}"
           SHA256="${{ steps.bump.outputs.sha256 }}"

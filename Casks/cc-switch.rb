@@ -18,7 +18,7 @@ cask "cc-switch" do
 
   # Verify the release asset was uploaded by GitHub Actions
   preflight do
-    github_token = ENV.fetch("GITHUB_TOKEN", nil)
+    github_token = ENV.fetch("HOMEBREW_GITHUB_API_TOKEN") { ENV.fetch("GITHUB_TOKEN", nil) }
     curl_args = ["--fail", "--silent", "--location",
                  "--header", "Accept: application/vnd.github+json"]
     curl_args += ["--header", "Authorization: Bearer #{github_token}"] unless github_token.to_s.empty?
