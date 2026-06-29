@@ -21,6 +21,8 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Test cask
+        env:
+          HOMEBREW_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git show
           brew tap farion1231/homebrew-ccswitch "$PWD"
