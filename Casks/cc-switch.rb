@@ -18,12 +18,19 @@ cask "cc-switch" do
 
   # Verify the release asset was uploaded by GitHub Actions
   preflight do
+    github_token = ENV.fetch("GITHUB_TOKEN", nil)
+    curl_args = ["--fail", "--silent", "--location",
+                 "--header", "Accept: application/vnd.github+json"]
+    curl_args += ["--header", "Authorization: Bearer #{github_token}"] unless github_token.to_s.empty?
+    curl_args << "https://api.github.com/repos/farion1231/cc-switch/releases/tags/v#{version}"
+
     # Fetch the cask's pinned release info from GitHub API
     release_info = JSON.parse(
       system_command("curl",
-                     args:         ["--silent", "--location",
-                                    "https://api.github.com/repos/farion1231/cc-switch/releases/tags/v#{version}"],
-                     print_stderr: false).stdout,
+                     args:         curl_args,
+                     must_succeed: true,
+                     print_stderr: false,
+                     secrets:      [github_token].compact).stdout,
     )
 
     # GitHub Actions bot ID and login
