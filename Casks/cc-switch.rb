@@ -19,7 +19,7 @@ cask "cc-switch" do
   # Verify the release asset was uploaded by GitHub Actions
   preflight_steps do
     run "/bin/sh",
-        args: ["-eu", "-c", <<~'SH'],
+        args:           ["-eu", "-c", <<~'SH'],
           github_token="${HOMEBREW_GITHUB_API_TOKEN:-${GITHUB_TOKEN:-}}"
           release_info=$(/usr/bin/mktemp -t cc-switch-release)
           trap 'rm -f "$release_info"' EXIT
