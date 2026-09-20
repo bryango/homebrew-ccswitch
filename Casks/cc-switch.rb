@@ -16,7 +16,7 @@ cask "cc-switch" do
 
   app "CC Switch.app"
 
-  # Verify the release was uploaded by GitHub Actions
+  # Verify the release asset was uploaded by GitHub Actions
   preflight_steps do
     run "/bin/sh",
         args: ["-eu", "-c", <<~'SH'],
@@ -34,15 +34,30 @@ cask "cc-switch" do
             --output "$release_info" \
             "https://api.github.com/repos/farion1231/cc-switch/releases/tags/v{{version}}"
 
-          uploader=$(/usr/bin/plutil -extract author.login raw -o - "$release_info")
-          uploader_id=$(/usr/bin/plutil -extract author.id raw -o - "$release_info")
+          asset_name="CC-Switch-v{{version}}-macOS.tar.gz"
+          index=0
+          uploader=
+          uploader_id=
+          while name=$(/usr/bin/plutil -extract "assets.$index.name" raw -o - "$release_info" 2>/dev/null); do
+            if [ "$name" = "$asset_name" ]; then
+              uploader=$(/usr/bin/plutil -extract "assets.$index.uploader.login" raw -o - "$release_info")
+              uploader_id=$(/usr/bin/plutil -extract "assets.$index.uploader.id" raw -o - "$release_info")
+              break
+            fi
+            index=$((index + 1))
+          done
+
+          if [ -z "$uploader" ]; then
+            printf 'Release asset not found: %s\n' "$asset_name" >&2
+            exit 1
+          fi
 
           if [ "$uploader" != "github-actions[bot]" ] || [ "$uploader_id" != "41898282" ]; then
             printf '%s\n' \
-              "The release was not uploaded by the GitHub Actions bot." \
+              "The release asset was not uploaded by the GitHub Actions bot." \
               "Current uploader: $uploader (ID: $uploader_id)" \
               "Expected: github-actions[bot] (ID: 41898282)" \
-              "Please ensure the release was created via GitHub Actions workflow." >&2
+              "Please ensure the release asset was uploaded via GitHub Actions workflow." >&2
             exit 1
           fi
         SH
