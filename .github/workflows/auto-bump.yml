@@ -34,19 +34,26 @@ jobs:
           echo "current=$CURRENT" >> "$GITHUB_OUTPUT"
 
           if [ "$LATEST" != "$CURRENT" ]; then
-            # Verify release uploaded by GitHub Actions bot
-            UPLOADER=$(echo "$RELEASE_JSON" | jq -r '.author.login')
-            UPLOADER_ID=$(echo "$RELEASE_JSON" | jq -r '.author.id')
+            ASSET_NAME="CC-Switch-v${LATEST}-macOS.tar.gz"
+            ASSET=$(echo "$RELEASE_JSON" | jq -c --arg name "$ASSET_NAME" '.assets[] | select(.name == $name)')
+            if [ -z "$ASSET" ]; then
+              echo "ERROR: Release asset not found: $ASSET_NAME"
+              exit 1
+            fi
+
+            # Verify the exact release asset was uploaded by GitHub Actions bot
+            UPLOADER=$(echo "$ASSET" | jq -r '.uploader.login')
+            UPLOADER_ID=$(echo "$ASSET" | jq -r '.uploader.id')
             GITHUB_ACTIONS_BOT_ID=41898282
             GITHUB_ACTIONS_BOT_LOGIN="github-actions[bot]"
 
             if [ "$UPLOADER" != "$GITHUB_ACTIONS_BOT_LOGIN" ] || [ "$UPLOADER_ID" != "$GITHUB_ACTIONS_BOT_ID" ]; then
-              echo "ERROR: Release not uploaded by GitHub Actions bot (uploader: $UPLOADER, ID: $UPLOADER_ID)"
+              echo "ERROR: Release asset not uploaded by GitHub Actions bot (uploader: $UPLOADER, ID: $UPLOADER_ID)"
               exit 1
             fi
 
-            # Get sha256 digest from asset
-            SHA256=$(echo "$RELEASE_JSON" | jq -r '.assets[] | select(.name | endswith("macOS.tar.gz")) | .digest | sub("^sha256:"; "")')
+            # Get sha256 digest from the verified asset
+            SHA256=$(echo "$ASSET" | jq -r '.digest | sub("^sha256:"; "")')
             echo "sha256=$SHA256" >> "$GITHUB_OUTPUT"
             echo "need_bump=true" >> "$GITHUB_OUTPUT"
             echo "Bumping: $CURRENT -> $LATEST"

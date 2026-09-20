@@ -26,4 +26,6 @@ jobs:
         run: |
           git show
           brew tap farion1231/homebrew-ccswitch "$PWD"
+          brew style --cask farion1231/ccswitch/cc-switch
+          brew audit --cask farion1231/ccswitch/cc-switch
           brew install --cask farion1231/ccswitch/cc-switch
