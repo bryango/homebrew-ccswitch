@@ -16,39 +16,37 @@ cask "cc-switch" do
 
   app "CC Switch.app"
 
-  # Verify the release asset was uploaded by GitHub Actions
-  preflight do
-    github_token = ENV.fetch("HOMEBREW_GITHUB_API_TOKEN") { ENV.fetch("GITHUB_TOKEN", nil) }
-    curl_args = ["--fail", "--silent", "--location",
-                 "--header", "Accept: application/vnd.github+json"]
-    curl_args += ["--header", "Authorization: Bearer #{github_token}"] unless github_token.to_s.empty?
-    curl_args << "https://api.github.com/repos/farion1231/cc-switch/releases/tags/v#{version}"
+  # Verify the release was uploaded by GitHub Actions
+  preflight_steps do
+    run "/bin/sh",
+        args: ["-eu", "-c", <<~'SH'],
+          github_token="${HOMEBREW_GITHUB_API_TOKEN:-${GITHUB_TOKEN:-}}"
+          release_info=$(/usr/bin/mktemp -t cc-switch-release)
+          trap 'rm -f "$release_info"' EXIT
 
-    # Fetch the cask's pinned release info from GitHub API
-    release_info = JSON.parse(
-      system_command("curl",
-                     args:         curl_args,
-                     must_succeed: true,
-                     print_stderr: false,
-                     secrets:      [github_token].compact).stdout,
-    )
+          set -- --fail --silent --location \
+            --header "Accept: application/vnd.github+json"
+          if [ -n "$github_token" ]; then
+            set -- "$@" --header "Authorization: Bearer $github_token"
+          fi
 
-    # GitHub Actions bot ID and login
-    github_actions_bot_id = 41898282
-    github_actions_bot_login = "github-actions[bot]"
+          /usr/bin/curl "$@" \
+            --output "$release_info" \
+            "https://api.github.com/repos/farion1231/cc-switch/releases/tags/v{{version}}"
 
-    # Check both the login and ID
-    uploader = release_info.dig("author", "login")
-    uploader_id = release_info.dig("author", "id")
+          uploader=$(/usr/bin/plutil -extract author.login raw -o - "$release_info")
+          uploader_id=$(/usr/bin/plutil -extract author.id raw -o - "$release_info")
 
-    if uploader != github_actions_bot_login || uploader_id != github_actions_bot_id
-      raise <<~EOS.chomp
-        The release was not uploaded by the GitHub Actions bot.
-        Current uploader: #{uploader} (ID: #{uploader_id})
-        Expected: #{github_actions_bot_login} (ID: #{github_actions_bot_id})
-        Please ensure the release was created via GitHub Actions workflow.
-      EOS
-    end
+          if [ "$uploader" != "github-actions[bot]" ] || [ "$uploader_id" != "41898282" ]; then
+            printf '%s\n' \
+              "The release was not uploaded by the GitHub Actions bot." \
+              "Current uploader: $uploader (ID: $uploader_id)" \
+              "Expected: github-actions[bot] (ID: 41898282)" \
+              "Please ensure the release was created via GitHub Actions workflow." >&2
+            exit 1
+          fi
+        SH
+        network_access: true
   end
 
   zap trash: [
