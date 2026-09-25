@@ -1,6 +1,6 @@
 cask "cc-switch" do
-  version "3.20.2-19"
-  sha256 "7da949293c1ea5fd2301c09d4a4f8f9c3fa0742b7d535939593ee3d060bf31e8"
+  version "3.20.2-20"
+  sha256 "197b7e21416808a4356c08f7ddd4ff7760f2298bb10c5b8d27c88b88bb989649"
 
   url "https://github.com/BigStrongSun/ccswitchmulti/releases/download/v#{version}/CCSwitchMulti-v#{version}-macOS.tar.gz"
   name "CCSwitchMulti"
