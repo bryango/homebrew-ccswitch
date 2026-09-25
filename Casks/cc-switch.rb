@@ -22,17 +22,34 @@ cask "cc-switch" do
         args:           ["-eu", "-c", <<~'SH'],
           github_token="${HOMEBREW_GITHUB_API_TOKEN:-${GITHUB_TOKEN:-}}"
           release_info=$(/usr/bin/mktemp -t cc-switch-release)
+          release_url="https://api.github.com/repos/farion1231/cc-switch/releases/tags/v{{version}}"
           trap 'rm -f "$release_info"' EXIT
 
-          set -- --fail --silent --location \
-            --header "Accept: application/vnd.github+json"
-          if [ -n "$github_token" ]; then
-            set -- "$@" --header "Authorization: Bearer $github_token"
-          fi
+          fetch_release() {
+            if [ -n "$1" ]; then
+              /usr/bin/curl --fail --silent --show-error --location --http1.1 \
+                --retry 3 --retry-delay 1 --retry-all-errors \
+                --header "Accept: application/vnd.github+json" \
+                --header "Authorization: Bearer $1" \
+                --output "$release_info" \
+                "$release_url"
+            else
+              /usr/bin/curl --fail --silent --show-error --location --http1.1 \
+                --retry 3 --retry-delay 1 --retry-all-errors \
+                --header "Accept: application/vnd.github+json" \
+                --output "$release_info" \
+                "$release_url"
+            fi
+          }
 
-          /usr/bin/curl "$@" \
-            --output "$release_info" \
-            "https://api.github.com/repos/farion1231/cc-switch/releases/tags/v{{version}}"
+          if [ -n "$github_token" ]; then
+            if ! fetch_release "$github_token"; then
+              printf '%s\n' "Authenticated GitHub API request failed; retrying anonymously." >&2
+              fetch_release ""
+            fi
+          else
+            fetch_release ""
+          fi
 
           asset_name="CC-Switch-v{{version}}-macOS.tar.gz"
           index=0
