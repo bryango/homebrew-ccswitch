@@ -1,11 +1,11 @@
 cask "cc-switch" do
-  version "3.20.3"
-  sha256 "8f00554cfddf585fa672e5e7d21db0e84ae410e02d127b96ce0211013734568f"
+  version "3.20.2-20"
+  sha256 "197b7e21416808a4356c08f7ddd4ff7760f2298bb10c5b8d27c88b88bb989649"
 
-  url "https://github.com/farion1231/cc-switch/releases/download/v#{version}/CC-Switch-v#{version}-macOS.tar.gz"
-  name "CC Switch"
+  url "https://github.com/BigStrongSun/ccswitchmulti/releases/download/v#{version}/CCSwitchMulti-v#{version}-macOS.tar.gz"
+  name "CCSwitchMulti"
   desc "Configuration manager for Claude Code, Codex, Gemini CLI, OpenCode and OpenClaw"
-  homepage "https://github.com/farion1231/cc-switch"
+  homepage "https://github.com/BigStrongSun/ccswitchmulti"
 
   livecheck do
     url :url
@@ -14,7 +14,7 @@ cask "cc-switch" do
 
   depends_on macos: :monterey
 
-  app "CC Switch.app"
+  app "CCSwitchMulti.app"
 
   # Verify the release asset was uploaded by GitHub Actions
   preflight_steps do
@@ -22,7 +22,7 @@ cask "cc-switch" do
         args:           ["-eu", "-c", <<~'SH'],
           github_token="${HOMEBREW_GITHUB_API_TOKEN:-${GITHUB_TOKEN:-}}"
           release_info=$(/usr/bin/mktemp -t cc-switch-release)
-          release_url="https://api.github.com/repos/farion1231/cc-switch/releases/tags/v{{version}}"
+          release_url="https://api.github.com/repos/BigStrongSun/ccswitchmulti/releases/tags/v{{version}}"
           trap 'rm -f "$release_info"' EXIT
 
           if [ -n "$github_token" ]; then
@@ -47,7 +47,7 @@ cask "cc-switch" do
               "$release_url"
           fi
 
-          asset_name="CC-Switch-v{{version}}-macOS.tar.gz"
+          asset_name="CCSwitchMulti-v{{version}}-macOS.tar.gz"
           index=0
           uploader=
           uploader_id=
@@ -79,10 +79,10 @@ cask "cc-switch" do
 
   zap trash: [
     "~/.cc-switch",
-    "~/Library/Application Support/com.ccswitch.desktop",
-    "~/Library/Caches/com.ccswitch.desktop",
-    "~/Library/Preferences/com.ccswitch.desktop.plist",
-    "~/Library/Saved Application State/com.ccswitch.desktop.savedState",
-    "~/Library/WebKit/com.ccswitch.desktop",
+    "~/Library/Application Support/com.ccswitchmulti.desktop",
+    "~/Library/Caches/com.ccswitchmulti.desktop",
+    "~/Library/Preferences/com.ccswitchmulti.desktop.plist",
+    "~/Library/Saved Application State/com.ccswitchmulti.desktop.savedState",
+    "~/Library/WebKit/com.ccswitchmulti.desktop",
   ]
 end

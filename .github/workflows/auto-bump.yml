@@ -24,7 +24,7 @@ jobs:
           RELEASE_JSON=$(curl -fsSL \
             -H "Authorization: Bearer ${GITHUB_TOKEN:?}" \
             -H "Accept: application/vnd.github+json" \
-            https://api.github.com/repos/farion1231/cc-switch/releases/latest)
+            https://api.github.com/repos/BigStrongSun/ccswitchmulti/releases/latest)
           echo "$RELEASE_JSON"
 
           LATEST=$(echo "$RELEASE_JSON" | jq -r '.tag_name | sub("^v"; "")')
@@ -34,7 +34,7 @@ jobs:
           echo "current=$CURRENT" >> "$GITHUB_OUTPUT"
 
           if [ "$LATEST" != "$CURRENT" ]; then
-            ASSET_NAME="CC-Switch-v${LATEST}-macOS.tar.gz"
+            ASSET_NAME="CCSwitchMulti-v${LATEST}-macOS.tar.gz"
             ASSET=$(echo "$RELEASE_JSON" | jq -c --arg name "$ASSET_NAME" '.assets[] | select(.name == $name)')
             if [ -z "$ASSET" ]; then
               echo "ERROR: Release asset not found: $ASSET_NAME"
@@ -75,10 +75,10 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add Casks/cc-switch.rb
-          git commit -m "chore: bump cc-switch to v${{ steps.bump.outputs.latest }}"
+          git commit -m "chore: bump cc-switch multi to v${{ steps.bump.outputs.latest }}"
 
-          brew tap bryango/homebrew-ccswitch "$PWD"
-          brew tap-info bryango/homebrew-ccswitch
+          brew tap bryango/ccswitch "$PWD"
+          brew tap-info bryango/ccswitch
           brew install --cask bryango/ccswitch/cc-switch
 
       - name: Create pull request
@@ -86,8 +86,8 @@ jobs:
         uses: peter-evans/create-pull-request@c0f553fe549906ede9cf27b5156039d195d2ece0 # v8
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          title: "chore: bump cc-switch to v${{ steps.bump.outputs.latest }}"
-          branch: "bump/cc-switch-${{ steps.bump.outputs.latest }}"
+          title: "chore: bump cc-switch multi to v${{ steps.bump.outputs.latest }}"
+          branch: "bump/cc-switch-multi-${{ steps.bump.outputs.latest }}"
           delete-branch: true
           body: |
-            Auto-bumped cc-switch to version ${{ steps.bump.outputs.latest }}.
+            Auto-bumped CCSwitchMulti to version ${{ steps.bump.outputs.latest }}.
