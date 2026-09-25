@@ -43,7 +43,11 @@ cask "cc-switch" do
           }
 
           if [ -n "$github_token" ]; then
-            if ! fetch_release "$github_token"; then
+            set +e
+            fetch_release "$github_token"
+            fetch_status=$?
+            set -e
+            if [ "$fetch_status" -ne 0 ]; then
               printf '%s\n' "Authenticated GitHub API request failed; retrying anonymously." >&2
               fetch_release ""
             fi
