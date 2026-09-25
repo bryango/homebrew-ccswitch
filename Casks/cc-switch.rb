@@ -25,34 +25,26 @@ cask "cc-switch" do
           release_url="https://api.github.com/repos/farion1231/cc-switch/releases/tags/v{{version}}"
           trap 'rm -f "$release_info"' EXIT
 
-          fetch_release() {
-            if [ -n "$1" ]; then
-              /usr/bin/curl --fail --silent --show-error --location --http1.1 \
-                --retry 3 --retry-delay 1 --retry-all-errors \
-                --header "Accept: application/vnd.github+json" \
-                --header "Authorization: Bearer $1" \
-                --output "$release_info" \
-                "$release_url"
-            else
-              /usr/bin/curl --fail --silent --show-error --location --http1.1 \
-                --retry 3 --retry-delay 1 --retry-all-errors \
-                --header "Accept: application/vnd.github+json" \
-                --output "$release_info" \
-                "$release_url"
-            fi
-          }
-
           if [ -n "$github_token" ]; then
-            set +e
-            fetch_release "$github_token"
-            fetch_status=$?
-            set -e
-            if [ "$fetch_status" -ne 0 ]; then
-              printf '%s\n' "Authenticated GitHub API request failed; retrying anonymously." >&2
-              fetch_release ""
-            fi
+            /usr/bin/curl --fail --silent --show-error --location --http1.1 \
+              --retry 3 --retry-delay 1 --retry-all-errors \
+              --header "Accept: application/vnd.github+json" \
+              --header "Authorization: Bearer $github_token" \
+              --output "$release_info" \
+              "$release_url" || {
+                printf '%s\n' "Authenticated GitHub API request failed; retrying anonymously." >&2
+                /usr/bin/curl --fail --silent --show-error --location --http1.1 \
+                  --retry 3 --retry-delay 1 --retry-all-errors \
+                  --header "Accept: application/vnd.github+json" \
+                  --output "$release_info" \
+                  "$release_url"
+              }
           else
-            fetch_release ""
+            /usr/bin/curl --fail --silent --show-error --location --http1.1 \
+              --retry 3 --retry-delay 1 --retry-all-errors \
+              --header "Accept: application/vnd.github+json" \
+              --output "$release_info" \
+              "$release_url"
           fi
 
           asset_name="CC-Switch-v{{version}}-macOS.tar.gz"
