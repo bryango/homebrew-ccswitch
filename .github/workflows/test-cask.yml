@@ -25,7 +25,7 @@ jobs:
           HOMEBREW_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git show
-          brew tap farion1231/homebrew-ccswitch "$PWD"
-          brew style --cask farion1231/ccswitch/cc-switch
-          brew audit --cask farion1231/ccswitch/cc-switch
-          brew install --cask farion1231/ccswitch/cc-switch
+          brew tap bryango/ccswitch "$PWD"
+          brew style --cask bryango/ccswitch/cc-switch
+          brew audit --cask bryango/ccswitch/cc-switch
+          brew install --cask bryango/ccswitch/cc-switch

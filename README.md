@@ -1,9 +1,11 @@
-# Homebrew Tap for CC Switch
+# Homebrew Tap for CCSwitchMulti
+
+This tap installs [CCSwitchMulti](https://github.com/BigStrongSun/ccswitchmulti) under the existing `cc-switch` cask token.
 
 ## Installation
 
 ```bash
-brew tap farion1231/ccswitch
+brew tap bryango/ccswitch
 brew install --cask cc-switch
 ```
 
@@ -18,5 +20,5 @@ brew upgrade --cask cc-switch
 
 ```bash
 brew uninstall --cask cc-switch
-brew untap farion1231/ccswitch
+brew untap bryango/ccswitch
 ```
