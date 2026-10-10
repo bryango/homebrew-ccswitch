@@ -34,6 +34,6 @@ jobs:
           umask 077
           credential_file=$(mktemp "${RUNNER_TEMP}/cc-switch-gh.XXXXXX")
           trap 'rm -f "$credential_file"' EXIT
-          printf '%s' "${GITHUB_TOKEN:?}" > "$credential_file"
+          printf 'Authorization: Bearer %s\n' "${GITHUB_TOKEN:?}" > "$credential_file"
           export HOMEBREW_CC_SWITCH_CREDENTIAL_PATH="$credential_file"
           brew install --cask farion1231/ccswitch/cc-switch
