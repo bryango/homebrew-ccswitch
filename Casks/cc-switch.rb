@@ -75,9 +75,12 @@ cask "cc-switch" do
             exit 1
           fi
         SH
-        # Homebrew clears inherited sensitive variables inside the cask sandbox.
-        # Explicitly forward the token to this trusted preflight step.
+        # Homebrew scrubs inherited secrets in the cask sandbox. This custom tap
+        # intentionally forwards the Actions token only to its trusted preflight.
+        # The dynamic value cannot be represented in the Homebrew cask JSON API.
+        # rubocop:disable Cask/InstallSteps
         env:            { "HOMEBREW_GITHUB_API_TOKEN" => ENV.fetch("HOMEBREW_GITHUB_API_TOKEN", "") },
+        # rubocop:enable Cask/InstallSteps
         network_access: true
   end
 
