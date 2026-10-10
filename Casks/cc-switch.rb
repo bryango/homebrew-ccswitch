@@ -26,6 +26,7 @@ cask "cc-switch" do
           trap 'rm -f "$release_info"' EXIT
 
           if [ -n "$github_token" ]; then
+            printf '%s\n' "Checking release provenance with authenticated GitHub API." >&2
             /usr/bin/curl --fail --silent --show-error --location --http1.1 \
               --retry 3 --retry-delay 1 --retry-all-errors \
               --header "Accept: application/vnd.github+json" \
@@ -74,6 +75,9 @@ cask "cc-switch" do
             exit 1
           fi
         SH
+        # Homebrew clears inherited sensitive variables inside the cask sandbox.
+        # Explicitly forward the token to this trusted preflight step.
+        env:            { "HOMEBREW_GITHUB_API_TOKEN" => ENV.fetch("HOMEBREW_GITHUB_API_TOKEN", "") },
         network_access: true
   end
 
