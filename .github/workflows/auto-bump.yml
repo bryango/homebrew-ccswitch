@@ -55,10 +55,6 @@ jobs:
             # Get sha256 digest from the verified asset
             SHA256=$(echo "$ASSET" | jq -r '.digest | sub("^sha256:"; "")')
             echo "sha256=$SHA256" >> "$GITHUB_OUTPUT"
-            # Pass only public metadata; the privileged token stays outside Homebrew.
-            RELEASE_METADATA=$(printf '%s' "$RELEASE_JSON" | jq -c --arg name "$ASSET_NAME" \
-              '{tag_name, assets: [.assets[] | select(.name == $name) | {name, uploader: {login: .uploader.login, id: .uploader.id}}]}')
-            echo "release_metadata=$RELEASE_METADATA" >> "$GITHUB_OUTPUT"
             echo "need_bump=true" >> "$GITHUB_OUTPUT"
             echo "Bumping: $CURRENT -> $LATEST"
           else
@@ -69,7 +65,7 @@ jobs:
       - name: Update, commit & test
         if: steps.bump.outputs.need_bump == 'true'
         env:
-          HOMEBREW_CC_SWITCH_RELEASE_METADATA: ${{ steps.bump.outputs.release_metadata }}
+          HOMEBREW_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           VERSION="${{ steps.bump.outputs.latest }}"
           SHA256="${{ steps.bump.outputs.sha256 }}"
@@ -83,6 +79,14 @@ jobs:
 
           brew tap bryango/homebrew-ccswitch "$PWD"
           brew tap-info bryango/homebrew-ccswitch
+
+          # Explicit credential-file handoff: Homebrew scrubs secret env vars
+          # inside sandboxed cask install steps. Remove the file after the test.
+          umask 077
+          credential_file=$(mktemp "${RUNNER_TEMP}/cc-switch-gh.XXXXXX")
+          trap 'rm -f "$credential_file"' EXIT
+          printf '%s' "${HOMEBREW_GITHUB_API_TOKEN:?}" > "$credential_file"
+          export HOMEBREW_CC_SWITCH_CREDENTIAL_PATH="$credential_file"
           brew install --cask bryango/ccswitch/cc-switch
 
       - name: Create pull request
