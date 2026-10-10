@@ -22,10 +22,18 @@ jobs:
 
       - name: Test cask
         env:
-          HOMEBREW_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git show
           brew tap farion1231/homebrew-ccswitch "$PWD"
           brew style --cask farion1231/ccswitch/cc-switch
           brew audit --cask farion1231/ccswitch/cc-switch
+
+          # Pass a read-only GitHub token via an ephemeral 0600 file.
+          # The cask still independently fetches and checks upstream metadata.
+          umask 077
+          credential_file=$(mktemp "${RUNNER_TEMP}/cc-switch-gh.XXXXXX")
+          trap 'rm -f "$credential_file"' EXIT
+          printf 'Authorization: Bearer %s\n' "${GITHUB_TOKEN:?}" > "$credential_file"
+          export HOMEBREW_CC_SWITCH_CREDENTIAL_PATH="$credential_file"
           brew install --cask farion1231/ccswitch/cc-switch

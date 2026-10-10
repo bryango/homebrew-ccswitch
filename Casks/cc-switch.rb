@@ -20,31 +20,41 @@ cask "cc-switch" do
   preflight_steps do
     run "/bin/sh",
         args:           ["-eu", "-c", <<~'SH'],
-          github_token="${HOMEBREW_GITHUB_API_TOKEN:-${GITHUB_TOKEN:-}}"
           release_info=$(/usr/bin/mktemp -t cc-switch-release)
           release_url="https://api.github.com/repos/farion1231/cc-switch/releases/tags/v{{version}}"
           trap 'rm -f "$release_info"' EXIT
 
-          if [ -n "$github_token" ]; then
-            /usr/bin/curl --fail --silent --show-error --location --http1.1 \
+          # Homebrew strips inherited secret variables from cask hooks.
+          # An opt-in path to a 0600 HTTP header file can survive the sandbox,
+          # without embedding the token in the cask's serialised install steps.
+          credential_path="${HOMEBREW_CC_SWITCH_CREDENTIAL_PATH:-}"
+          if [ -n "$credential_path" ]; then
+            if [ ! -s "$credential_path" ]; then
+              printf '%s\n' "GitHub credential header file is missing or empty." >&2
+              exit 1
+            fi
+            printf '%s\n' "Checking release provenance via authenticated GitHub API." >&2
+            # curl reads the Authorization header from the protected file, not argv.
+            # Do not follow redirects to avoid forwarding it to another host.
+            /usr/bin/curl --fail --silent --show-error --http1.1 \
               --retry 3 --retry-delay 1 --retry-all-errors \
               --header "Accept: application/vnd.github+json" \
-              --header "Authorization: Bearer $github_token" \
+              --header "@$credential_path" \
               --output "$release_info" \
-              "$release_url" || {
-                printf '%s\n' "Authenticated GitHub API request failed; retrying anonymously." >&2
-                /usr/bin/curl --fail --silent --show-error --location --http1.1 \
-                  --retry 3 --retry-delay 1 --retry-all-errors \
-                  --header "Accept: application/vnd.github+json" \
-                  --output "$release_info" \
-                  "$release_url"
-              }
+              "$release_url"
           else
+            printf '%s\n' "Checking release provenance via public GitHub API." >&2
             /usr/bin/curl --fail --silent --show-error --location --http1.1 \
               --retry 3 --retry-delay 1 --retry-all-errors \
               --header "Accept: application/vnd.github+json" \
               --output "$release_info" \
               "$release_url"
+          fi
+
+          release_tag=$(/usr/bin/plutil -extract tag_name raw -o - "$release_info")
+          if [ "$release_tag" != "v{{version}}" ]; then
+            printf 'Unexpected release tag: %s\n' "$release_tag" >&2
+            exit 1
           fi
 
           asset_name="CC-Switch-v{{version}}-macOS.tar.gz"
