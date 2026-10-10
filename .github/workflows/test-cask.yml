@@ -29,14 +29,11 @@ jobs:
           brew style --cask farion1231/ccswitch/cc-switch
           brew audit --cask farion1231/ccswitch/cc-switch
 
-          # Obtain only public asset metadata with the workflow's read-only token.
-          VERSION=$(sed -n 's/^  version "\(.*\)"/\1/p' Casks/cc-switch.rb)
-          RELEASE_JSON=$(curl -fsSL --retry 3 \
-            -H "Authorization: Bearer ${GITHUB_TOKEN:?}" \
-            -H "Accept: application/vnd.github+json" \
-            "https://api.github.com/repos/farion1231/cc-switch/releases/tags/v${VERSION}")
-          ASSET_NAME="CC-Switch-v${VERSION}-macOS.tar.gz"
-          export HOMEBREW_CC_SWITCH_RELEASE_METADATA
-          HOMEBREW_CC_SWITCH_RELEASE_METADATA=$(printf '%s' "$RELEASE_JSON" | jq -c --arg name "$ASSET_NAME" \
-            '{tag_name, assets: [.assets[] | select(.name == $name) | {name, uploader: {login: .uploader.login, id: .uploader.id}}]}')
+          # Pass a read-only GitHub token via an ephemeral 0600 file.
+          # The cask still independently fetches and checks upstream metadata.
+          umask 077
+          credential_file=$(mktemp "${RUNNER_TEMP}/cc-switch-gh.XXXXXX")
+          trap 'rm -f "$credential_file"' EXIT
+          printf '%s' "${GITHUB_TOKEN:?}" > "$credential_file"
+          export HOMEBREW_CC_SWITCH_CREDENTIAL_PATH="$credential_file"
           brew install --cask farion1231/ccswitch/cc-switch
