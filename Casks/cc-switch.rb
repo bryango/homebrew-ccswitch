@@ -20,32 +20,27 @@ cask "cc-switch" do
   preflight_steps do
     run "/bin/sh",
         args:           ["-eu", "-c", <<~'SH'],
-          github_token="${HOMEBREW_GITHUB_API_TOKEN:-${GITHUB_TOKEN:-}}"
           release_info=$(/usr/bin/mktemp -t cc-switch-release)
           release_url="https://api.github.com/repos/farion1231/cc-switch/releases/tags/v{{version}}"
           trap 'rm -f "$release_info"' EXIT
 
-          if [ -n "$github_token" ]; then
-            printf '%s\n' "Checking release provenance with authenticated GitHub API." >&2
-            /usr/bin/curl --fail --silent --show-error --location --http1.1 \
-              --retry 3 --retry-delay 1 --retry-all-errors \
-              --header "Accept: application/vnd.github+json" \
-              --header "Authorization: Bearer $github_token" \
-              --output "$release_info" \
-              "$release_url" || {
-                printf '%s\n' "Authenticated GitHub API request failed; retrying anonymously." >&2
-                /usr/bin/curl --fail --silent --show-error --location --http1.1 \
-                  --retry 3 --retry-delay 1 --retry-all-errors \
-                  --header "Accept: application/vnd.github+json" \
-                  --output "$release_info" \
-                  "$release_url"
-              }
+          # The workflow can provide public metadata fetched with its own token.
+          # Homebrew intentionally does not forward that token to cask hooks.
+          if [ -n "${HOMEBREW_CC_SWITCH_RELEASE_METADATA:-}" ]; then
+            printf '%s\n' "Checking release provenance using CI-fetched metadata." >&2
+            printf '%s\n' "$HOMEBREW_CC_SWITCH_RELEASE_METADATA" > "$release_info"
           else
             /usr/bin/curl --fail --silent --show-error --location --http1.1 \
               --retry 3 --retry-delay 1 --retry-all-errors \
               --header "Accept: application/vnd.github+json" \
               --output "$release_info" \
               "$release_url"
+          fi
+
+          release_tag=$(/usr/bin/plutil -extract tag_name raw -o - "$release_info")
+          if [ "$release_tag" != "v{{version}}" ]; then
+            printf 'Unexpected release tag: %s\n' "$release_tag" >&2
+            exit 1
           fi
 
           asset_name="CC-Switch-v{{version}}-macOS.tar.gz"
@@ -75,12 +70,6 @@ cask "cc-switch" do
             exit 1
           fi
         SH
-        # Homebrew scrubs inherited secrets in the cask sandbox. This custom tap
-        # intentionally forwards the Actions token only to its trusted preflight.
-        # The dynamic value cannot be represented in the Homebrew cask JSON API.
-        # rubocop:disable Cask/InstallSteps
-        env:            { "HOMEBREW_GITHUB_API_TOKEN" => ENV.fetch("HOMEBREW_GITHUB_API_TOKEN", "") },
-        # rubocop:enable Cask/InstallSteps
         network_access: true
   end
 
