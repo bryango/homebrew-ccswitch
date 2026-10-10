@@ -25,20 +25,21 @@ cask "cc-switch" do
           trap 'rm -f "$release_info"' EXIT
 
           # Homebrew strips inherited secret variables from cask hooks.
-          # An opt-in path to a 0600 credential file can survive the sandbox,
+          # An opt-in path to a 0600 HTTP header file can survive the sandbox,
           # without embedding the token in the cask's serialised install steps.
           credential_path="${HOMEBREW_CC_SWITCH_CREDENTIAL_PATH:-}"
           if [ -n "$credential_path" ]; then
-            github_token=$(/bin/cat "$credential_path")
-            if [ -z "$github_token" ]; then
-              printf '%s\n' "GitHub credential file is empty." >&2
+            if [ ! -s "$credential_path" ]; then
+              printf '%s\n' "GitHub credential header file is missing or empty." >&2
               exit 1
             fi
             printf '%s\n' "Checking release provenance via authenticated GitHub API." >&2
-            /usr/bin/curl --fail --silent --show-error --location --http1.1 \
+            # curl reads the Authorization header from the protected file, not argv.
+            # Do not follow redirects to avoid forwarding it to another host.
+            /usr/bin/curl --fail --silent --show-error --http1.1 \
               --retry 3 --retry-delay 1 --retry-all-errors \
               --header "Accept: application/vnd.github+json" \
-              --header "Authorization: Bearer $github_token" \
+              --header "@$credential_path" \
               --output "$release_info" \
               "$release_url"
           else
