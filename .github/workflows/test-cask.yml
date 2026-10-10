@@ -22,10 +22,21 @@ jobs:
 
       - name: Test cask
         env:
-          HOMEBREW_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git show
           brew tap farion1231/homebrew-ccswitch "$PWD"
           brew style --cask farion1231/ccswitch/cc-switch
           brew audit --cask farion1231/ccswitch/cc-switch
+
+          # Obtain only public asset metadata with the workflow's read-only token.
+          VERSION=$(sed -n 's/^  version "\(.*\)"/\1/p' Casks/cc-switch.rb)
+          RELEASE_JSON=$(curl -fsSL --retry 3 \
+            -H "Authorization: Bearer ${GITHUB_TOKEN:?}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/farion1231/cc-switch/releases/tags/v${VERSION}")
+          ASSET_NAME="CC-Switch-v${VERSION}-macOS.tar.gz"
+          export HOMEBREW_CC_SWITCH_RELEASE_METADATA
+          HOMEBREW_CC_SWITCH_RELEASE_METADATA=$(printf '%s' "$RELEASE_JSON" | jq -c --arg name "$ASSET_NAME" \
+            '{tag_name, assets: [.assets[] | select(.name == $name) | {name, uploader: {login: .uploader.login, id: .uploader.id}}]}')
           brew install --cask farion1231/ccswitch/cc-switch
