@@ -24,12 +24,25 @@ cask "cc-switch" do
           release_url="https://api.github.com/repos/farion1231/cc-switch/releases/tags/v{{version}}"
           trap 'rm -f "$release_info"' EXIT
 
-          # The workflow can provide public metadata fetched with its own token.
-          # Homebrew intentionally does not forward that token to cask hooks.
-          if [ -n "${HOMEBREW_CC_SWITCH_RELEASE_METADATA:-}" ]; then
-            printf '%s\n' "Checking release provenance using CI-fetched metadata." >&2
-            printf '%s\n' "$HOMEBREW_CC_SWITCH_RELEASE_METADATA" > "$release_info"
+          # Homebrew strips inherited secret variables from cask hooks.
+          # An opt-in path to a 0600 credential file can survive the sandbox,
+          # without embedding the token in the cask's serialised install steps.
+          credential_path="${HOMEBREW_CC_SWITCH_CREDENTIAL_PATH:-}"
+          if [ -n "$credential_path" ]; then
+            github_token=$(/bin/cat "$credential_path")
+            if [ -z "$github_token" ]; then
+              printf '%s\n' "GitHub credential file is empty." >&2
+              exit 1
+            fi
+            printf '%s\n' "Checking release provenance via authenticated GitHub API." >&2
+            /usr/bin/curl --fail --silent --show-error --location --http1.1 \
+              --retry 3 --retry-delay 1 --retry-all-errors \
+              --header "Accept: application/vnd.github+json" \
+              --header "Authorization: Bearer $github_token" \
+              --output "$release_info" \
+              "$release_url"
           else
+            printf '%s\n' "Checking release provenance via public GitHub API." >&2
             /usr/bin/curl --fail --silent --show-error --location --http1.1 \
               --retry 3 --retry-delay 1 --retry-all-errors \
               --header "Accept: application/vnd.github+json" \
